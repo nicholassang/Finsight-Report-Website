@@ -4,48 +4,1077 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinSight | Financial Filings RAG Research</title>
-    <meta
-        name="description"
-        content="FinSight is a domain-specific RAG system for Microsoft SEC filings, comparing seven retrieval pipelines across factual, temporal, multi-hop, and comparative financial QA tasks."
-    >
+    <meta name="description" content="FinSight is a domain-specific RAG system for Microsoft SEC filings, comparing seven retrieval pipelines across factual, temporal, multi-hop, and comparative financial QA tasks.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --background: #09090b;
+            --foreground: #fafafa;
+            --card: #18181b;
+            --card-foreground: #fafafa;
+            --muted: #27272a;
+            --muted-foreground: #a1a1aa;
+            --border: #27272a;
+            --primary: #10b981;
+            --primary-foreground: #09090b;
+            --secondary: #3f3f46;
+            --accent: #14b8a6;
+            --radius: 0.75rem;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(9, 9, 11, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--foreground);
+        }
+
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--background);
+        }
+
+        .brand-text strong {
+            display: block;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .brand-text span {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+        }
+
+        .nav {
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .nav {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+        }
+
+        .nav a {
+            padding: 0.5rem 0.875rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            text-decoration: none;
+            border-radius: var(--radius);
+            transition: all 0.2s ease;
+        }
+
+        .nav a:hover {
+            color: var(--foreground);
+            background: var(--muted);
+        }
+
+        /* Main Content */
+        main {
+            padding-top: 80px;
+        }
+
+        .section {
+            padding: 5rem 1.5rem;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .eyebrow::before {
+            content: '';
+            width: 24px;
+            height: 1px;
+            background: var(--primary);
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 5vw, 3.75rem);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            text-wrap: balance;
+        }
+
+        h2 {
+            font-size: clamp(1.75rem, 3vw, 2.5rem);
+            font-weight: 600;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            text-wrap: balance;
+        }
+
+        h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+        }
+
+        .hero-grid {
+            display: grid;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        @media (min-width: 1024px) {
+            .hero-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 4rem;
+            }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.875rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-content p.lead {
+            font-size: 1.125rem;
+            color: var(--muted-foreground);
+            margin-top: 1.5rem;
+            max-width: 540px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: var(--radius);
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--muted);
+            color: var(--foreground);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--secondary);
+            border-color: var(--secondary);
+        }
+
+        .hero-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            list-style: none;
+        }
+
+        .hero-metrics li {
+            text-align: center;
+        }
+
+        .metric-value {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--foreground);
+            font-family: var(--font-mono);
+        }
+
+        .metric-label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+            margin-top: 0.25rem;
+        }
+
+        /* Hero Visual */
+        .hero-visual {
+            position: relative;
+            height: 400px;
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .hero-visual {
+                display: block;
+            }
+        }
+
+        .visual-card {
+            position: absolute;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .visual-card-top {
+            top: 20%;
+            right: 10%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .visual-card-bottom {
+            bottom: 25%;
+            left: 5%;
+            animation: float 6s ease-in-out infinite 2s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .visual-card .kicker {
+            font-size: 0.625rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary);
+        }
+
+        .visual-card strong {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0.25rem 0;
+        }
+
+        .visual-card span {
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+        }
+
+        .architecture-flow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 1rem;
+            background: var(--muted);
+            border-radius: var(--radius);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            opacity: 0;
+            animation: fadeSlideIn 0.5s ease forwards;
+        }
+
+        .flow-step:nth-child(1) { animation-delay: 0.1s; }
+        .flow-step:nth-child(2) { animation-delay: 0.2s; }
+        .flow-step:nth-child(3) { animation-delay: 0.3s; }
+        .flow-step:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .flow-step .step-num {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: var(--background);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .glow-orb-1 {
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            top: 10%;
+            right: 20%;
+        }
+
+        .glow-orb-2 {
+            width: 200px;
+            height: 200px;
+            background: var(--accent);
+            bottom: 20%;
+            left: 10%;
+        }
+
+        /* Timeline Section */
+        .timeline {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .timeline {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .timeline {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .timeline-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+
+        .timeline-step {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--primary);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            margin-bottom: 1rem;
+        }
+
+        .timeline-card h3 {
+            margin-bottom: 0.75rem;
+        }
+
+        .timeline-card p {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+            line-height: 1.6;
+        }
+
+        /* Flow Section */
+        .flow-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        @media (min-width: 640px) {
+            .flow-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .flow-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .flow-node {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .flow-node:hover {
+            border-color: var(--accent);
+        }
+
+        .flow-index {
+            position: absolute;
+            top: -12px;
+            left: 1.5rem;
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            color: var(--background);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+
+        .flow-node h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-node p {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        /* Variants Section */
+        .variant-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            padding: 0.375rem;
+            background: var(--muted);
+            border-radius: var(--radius);
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .variant-tab {
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            background: transparent;
+            border: none;
+            border-radius: calc(var(--radius) - 4px);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: var(--font-mono);
+        }
+
+        .variant-tab:hover {
+            color: var(--foreground);
+        }
+
+        .variant-tab.active {
+            background: var(--background);
+            color: var(--foreground);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .variant-panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .variant-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .variant-pill {
+            padding: 0.375rem 0.75rem;
+            background: var(--primary);
+            color: var(--background);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }
+
+        .variant-summary {
+            color: var(--muted-foreground);
+            margin-bottom: 1.5rem;
+        }
+
+        .variant-details {
+            display: grid;
+            gap: 1rem;
+        }
+
+        @media (min-width: 640px) {
+            .variant-details {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .detail-item {
+            padding: 1rem;
+            background: var(--muted);
+            border-radius: calc(var(--radius) - 4px);
+        }
+
+        .detail-label {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted-foreground);
+            margin-bottom: 0.375rem;
+        }
+
+        .detail-value {
+            font-size: 0.875rem;
+            color: var(--foreground);
+        }
+
+        /* Results Section */
+        .results-highlights {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (min-width: 640px) {
+            .results-highlights {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .results-highlights {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .highlight-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .highlight-card:hover {
+            border-color: var(--primary);
+        }
+
+        .highlight-kicker {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary);
+        }
+
+        .highlight-value {
+            display: block;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+            font-family: var(--font-mono);
+        }
+
+        .highlight-card p {
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+        }
+
+        /* Metric Tabs */
+        .metric-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+        }
+
+        .metric-tab {
+            padding: 0.5rem 1rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            background: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .metric-tab:hover {
+            color: var(--foreground);
+            border-color: var(--secondary);
+        }
+
+        .metric-tab.active {
+            background: var(--primary);
+            color: var(--background);
+            border-color: var(--primary);
+        }
+
+        /* Chart Card */
+        .chart-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-kicker {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .chart-header h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .chart-caption {
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+        }
+
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .bar-label {
+            width: 32px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            color: var(--muted-foreground);
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 32px;
+            background: var(--muted);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 0.75rem;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bar-value {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--background);
+            font-family: var(--font-mono);
+        }
+
+        /* Notes Grid */
+        .notes-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .notes-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .note-card {
+            background: var(--muted);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+        }
+
+        .note-card h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .note-card p {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        @media (min-width: 640px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .metrics-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .metric-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: var(--accent);
+        }
+
+        .metric-card h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-card p {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        /* Paired Grid (Limitations, Guardrails) */
+        .paired-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .paired-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .panel-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+        }
+
+        .panel-card h3 {
+            margin-bottom: 1rem;
+        }
+
+        .bullet-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .bullet-list li {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+            padding-left: 1.25rem;
+            position: relative;
+        }
+
+        .bullet-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        /* Risk Cards */
+        .risk-grid {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (min-width: 640px) {
+            .risk-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .risk-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .risk-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .risk-level {
+            font-size: 0.625rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .risk-level.critical { color: #ef4444; }
+        .risk-level.high { color: #f97316; }
+        .risk-level.medium { color: #eab308; }
+        .risk-level.scope { color: #3b82f6; }
+
+        .risk-card strong {
+            display: block;
+            font-size: 1rem;
+            margin: 0.375rem 0;
+        }
+
+        .risk-card p {
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+        }
+
+        /* Conclusion */
+        .conclusion-hero {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.1));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: var(--radius);
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .conclusion-hero p {
+            font-size: 1.125rem;
+            color: var(--foreground);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Team Section */
+        .team-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .team-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            min-width: 180px;
+        }
+
+        .team-kicker {
+            font-size: 0.625rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary);
+        }
+
+        .team-card strong {
+            display: block;
+            font-size: 1.125rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+
+        footer p {
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+        }
+
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
 </head>
 <body>
-    <div class="page-shell">
-        <header class="topbar">
+    <header class="header">
+        <div class="header-inner">
             <a class="brand" href="#hero">
                 <span class="brand-mark">F</span>
-                <span class="brand-copy">
+                <div class="brand-text">
                     <strong>FinSight</strong>
                     <span>RAG research for SEC filings</span>
-                </span>
+                </div>
             </a>
-            <nav class="nav-links" aria-label="Primary navigation">
+            <nav class="nav" aria-label="Primary navigation">
                 <a href="#story">Story</a>
+                <a href="#flow">Flow</a>
                 <a href="#variants">Variants</a>
                 <a href="#results">Results</a>
-                <a href="#limitations">Limits</a>
+                <a href="#limitations">Limitations</a>
                 <a href="#guardrails">Guardrails</a>
                 <a href="#conclusion">Conclusion</a>
-                <a href="#deploy">Deploy</a>
             </nav>
-        </header>
+        </div>
+    </header>
 
-        <main>
-            <section class="hero section" id="hero">
-                <div class="hero-copy">
-                    <p class="vibe-note">Vibe-coded with love ❤️</p>
-                    <p class="eyebrow">IS469 Final Project</p>
+    <main>
+        <section class="section hero" id="hero">
+            <div class="hero-grid">
+                <div class="hero-content">
+                    <span class="hero-badge">IS469 Final Project</span>
                     <h1>From raw Microsoft filings to grounded financial QA.</h1>
-                    <p class="hero-lead">
-                        FinSight is a domain-specific retrieval-augmented generation system built to answer questions over Microsoft 10-K and 10-Q filings with citations, measurable grounding, and a controlled comparison of seven pipeline designs.
-                    </p>
+                    <p class="lead">FinSight is a domain-specific retrieval-augmented generation system built to answer questions over Microsoft 10-K and 10-Q filings with citations, measurable grounding, and a controlled comparison of seven pipeline designs.</p>
                     <div class="hero-actions">
-                        <a class="button button-primary" href="#results">See the findings</a>
-                        <a class="button button-secondary" href="#variants">Compare the versions</a>
+                        <a class="btn btn-primary" href="#results">See the findings</a>
+                        <a class="btn btn-secondary" href="#variants">Compare versions</a>
                     </div>
                     <ul class="hero-metrics" aria-label="Key metrics">
                         <li>
@@ -54,392 +1083,578 @@
                         </li>
                         <li>
                             <span class="metric-value">7</span>
-                            <span class="metric-label">pipeline variants</span>
+                            <span class="metric-label">Pipeline variants</span>
                         </li>
                         <li>
                             <span class="metric-value">20</span>
-                            <span class="metric-label">benchmark questions</span>
+                            <span class="metric-label">Benchmark questions</span>
                         </li>
                     </ul>
                 </div>
                 <div class="hero-visual" aria-hidden="true">
-                    <div class="orb orb-large"></div>
-                    <div class="orb orb-small"></div>
-                    <div class="signal-card signal-card-top">
-                        <span class="signal-kicker">Best grounding</span>
+                    <div class="glow-orb glow-orb-1"></div>
+                    <div class="glow-orb glow-orb-2"></div>
+                    <div class="visual-card visual-card-top">
+                        <span class="kicker">Best grounding</span>
                         <strong>V2</strong>
                         <span>Faithfulness 0.843</span>
                     </div>
-                    <div class="signal-card signal-card-bottom">
-                        <span class="signal-kicker">Best coverage</span>
+                    <div class="visual-card visual-card-bottom">
+                        <span class="kicker">Best coverage</span>
                         <strong>V4</strong>
                         <span>Relevancy 0.784</span>
                     </div>
-                    <div class="architecture-stack">
-                        <span>User query</span>
-                        <span>Retrieval pipeline</span>
-                        <span>Evidence selection</span>
-                        <span>Answer with citations</span>
-                    </div>
-                </div>
-            </section>
-
-            <section class="section narrative" id="story">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">Presentation Flow</p>
-                    <h2>The project story from start to finish.</h2>
-                </div>
-                <div class="timeline">
-                    <article class="timeline-card reveal">
-                        <span class="timeline-step">01</span>
-                        <h3>The problem</h3>
-                        <p>SEC filings are information-rich but hard to navigate. Financial questions often require exact figures, fiscal-period awareness, and cross-document comparison.</p>
-                    </article>
-                    <article class="timeline-card reveal">
-                        <span class="timeline-step">02</span>
-                        <h3>The system</h3>
-                        <p>FinSight ingests Microsoft filings, chunks them into searchable evidence, indexes them with dense and sparse retrieval, and generates citation-backed answers.</p>
-                    </article>
-                    <article class="timeline-card reveal">
-                        <span class="timeline-step">03</span>
-                        <h3>The experiment</h3>
-                        <p>Seven variants were evaluated to isolate the impact of retrieval, reranking, hybrid search, query rewriting, metadata filtering, and context compression.</p>
-                    </article>
-                    <article class="timeline-card reveal">
-                        <span class="timeline-step">04</span>
-                        <h3>The finding</h3>
-                        <p>No single pipeline wins every metric. Simpler versions ground answers better, while broader pipelines answer complex questions more completely at higher latency.</p>
-                    </article>
-                </div>
-            </section>
-
-            <section class="section flow-section">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">System Flow</p>
-                    <h2>How the application turns filings into answers.</h2>
-                </div>
-                <div class="flow-grid reveal">
-                    <div class="flow-node">
-                        <span class="flow-index">A</span>
-                        <h3>Ingest</h3>
-                        <p>Parse 10-K and 10-Q filings into structured text with fiscal metadata.</p>
-                    </div>
-                    <div class="flow-node">
-                        <span class="flow-index">B</span>
-                        <h3>Chunk</h3>
-                        <p>Split filings into evidence units sized for retrieval quality and citation traceability.</p>
-                    </div>
-                    <div class="flow-node">
-                        <span class="flow-index">C</span>
-                        <h3>Index</h3>
-                        <p>Build a dense ChromaDB index and a BM25 sparse index for complementary search signals.</p>
-                    </div>
-                    <div class="flow-node">
-                        <span class="flow-index">D</span>
-                        <h3>Retrieve</h3>
-                        <p>Use dense, sparse, hybrid, filtered, or rewritten-query retrieval depending on the pipeline.</p>
-                    </div>
-                    <div class="flow-node">
-                        <span class="flow-index">E</span>
-                        <h3>Refine</h3>
-                        <p>Optionally rerank or compress context so the generator sees cleaner, more targeted evidence.</p>
-                    </div>
-                    <div class="flow-node">
-                        <span class="flow-index">F</span>
-                        <h3>Generate</h3>
-                        <p>Produce grounded answers with citations, then evaluate them for faithfulness, relevancy, and numerical accuracy.</p>
-                    </div>
-                </div>
-            </section>
-
-            <section class="section variants-section" id="variants">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">Pipeline Variants</p>
-                    <h2>Each version adds one more retrieval capability.</h2>
-                </div>
-
-                <div class="variant-tabs reveal" role="tablist" aria-label="FinSight variants">
-                    <button class="variant-tab active" role="tab" aria-selected="true" data-variant="v0">V0</button>
-                    <button class="variant-tab" role="tab" aria-selected="false" data-variant="v1">V1</button>
-                    <button class="variant-tab" role="tab" aria-selected="false" data-variant="v2">V2</button>
-                    <button class="variant-tab" role="tab" aria-selected="false" data-variant="v3">V3</button>
-                    <button class="variant-tab" role="tab" aria-selected="false" data-variant="v4">V4</button>
-                    <button class="variant-tab" role="tab" aria-selected="false" data-variant="v5">V5</button>
-                    <button class="variant-tab" role="tab" aria-selected="false" data-variant="v6">V6</button>
-                </div>
-
-                <div class="variant-panel reveal">
-                    <div class="variant-panel-header">
-                        <p class="variant-pill" id="variantTag">V0</p>
-                        <h3 id="variantTitle">LLM-only baseline</h3>
-                    </div>
-                    <p id="variantSummary">No retrieval. The model answers from parametric memory, which makes it fluent but weakly grounded.</p>
-                    <div class="variant-detail-grid">
-                        <div>
-                            <span class="detail-label">Pipeline</span>
-                            <p id="variantPipeline">Generate only</p>
+                    <div class="architecture-flow">
+                        <div class="flow-step">
+                            <span class="step-num">1</span>
+                            <span>User query</span>
                         </div>
-                        <div>
-                            <span class="detail-label">Primary use</span>
-                            <p id="variantUse">Establish the hallucination floor.</p>
+                        <div class="flow-step">
+                            <span class="step-num">2</span>
+                            <span>Retrieval pipeline</span>
                         </div>
-                        <div>
-                            <span class="detail-label">Strength</span>
-                            <p id="variantStrength">Fast and simple.</p>
+                        <div class="flow-step">
+                            <span class="step-num">3</span>
+                            <span>Evidence selection</span>
                         </div>
-                        <div>
-                            <span class="detail-label">Trade-off</span>
-                            <p id="variantTradeoff">Unsupported claims and no evidence traceability.</p>
+                        <div class="flow-step">
+                            <span class="step-num">4</span>
+                            <span>Answer with citations</span>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <section class="section results-section" id="results">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">Evaluation</p>
-                    <h2>What the results actually showed.</h2>
+        <section class="section" id="story">
+            <div class="section-header reveal">
+                <p class="eyebrow">Presentation Flow</p>
+                <h2>The project story from start to finish.</h2>
+            </div>
+            <div class="timeline">
+                <article class="timeline-card reveal">
+                    <span class="timeline-step">01</span>
+                    <h3>The problem</h3>
+                    <p>SEC filings are information-rich but hard to navigate. Financial questions often require exact figures, fiscal-period awareness, and cross-document comparison.</p>
+                </article>
+                <article class="timeline-card reveal">
+                    <span class="timeline-step">02</span>
+                    <h3>The system</h3>
+                    <p>FinSight ingests Microsoft filings, chunks them into searchable evidence, indexes them with dense and sparse retrieval, and generates citation-backed answers.</p>
+                </article>
+                <article class="timeline-card reveal">
+                    <span class="timeline-step">03</span>
+                    <h3>The experiment</h3>
+                    <p>Seven variants were evaluated to isolate the impact of retrieval, reranking, hybrid search, query rewriting, metadata filtering, and context compression.</p>
+                </article>
+                <article class="timeline-card reveal">
+                    <span class="timeline-step">04</span>
+                    <h3>The finding</h3>
+                    <p>No single pipeline wins every metric. Simpler versions ground answers better, while broader pipelines answer complex questions more completely at higher latency.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section" id="flow">
+            <div class="section-header reveal">
+                <p class="eyebrow">System Flow</p>
+                <h2>How the application turns filings into answers.</h2>
+            </div>
+            <div class="flow-grid">
+                <div class="flow-node reveal">
+                    <span class="flow-index">A</span>
+                    <h3>Ingest</h3>
+                    <p>Parse 10-K and 10-Q filings into structured text with fiscal metadata.</p>
                 </div>
-
-                <div class="results-highlight reveal">
-                    <article>
-                        <span class="results-kicker">Best faithfulness</span>
-                        <strong>V2 · 0.843</strong>
-                        <p>Reranking was the most efficient way to improve grounding.</p>
-                    </article>
-                    <article>
-                        <span class="results-kicker">Best relevancy</span>
-                        <strong>V4 · 0.784</strong>
-                        <p>Query rewriting improved coverage and ambiguity handling.</p>
-                    </article>
-                    <article>
-                        <span class="results-kicker">Best numerical accuracy</span>
-                        <strong>V3 · 0.600</strong>
-                        <p>Hybrid retrieval helped recover exact figures and finance terms.</p>
-                    </article>
-                    <article>
-                        <span class="results-kicker">Fastest grounded version</span>
-                        <strong>V1 · 3.46s</strong>
-                        <p>Dense retrieval alone was already strong on simple factual questions.</p>
-                    </article>
+                <div class="flow-node reveal">
+                    <span class="flow-index">B</span>
+                    <h3>Chunk</h3>
+                    <p>Split filings into evidence units sized for retrieval quality and citation traceability.</p>
                 </div>
-
-                <div class="metric-switcher reveal" role="tablist" aria-label="Metrics">
-                    <button class="metric-button active" data-metric="faithfulness">Faithfulness</button>
-                    <button class="metric-button" data-metric="relevancy">Relevancy</button>
-                    <button class="metric-button" data-metric="numerical">Numerical accuracy</button>
-                    <button class="metric-button" data-metric="latency">Latency</button>
+                <div class="flow-node reveal">
+                    <span class="flow-index">C</span>
+                    <h3>Index</h3>
+                    <p>Build a dense ChromaDB index and a BM25 sparse index for complementary search signals.</p>
                 </div>
+                <div class="flow-node reveal">
+                    <span class="flow-index">D</span>
+                    <h3>Retrieve</h3>
+                    <p>Use dense, sparse, hybrid, filtered, or rewritten-query retrieval depending on the pipeline.</p>
+                </div>
+                <div class="flow-node reveal">
+                    <span class="flow-index">E</span>
+                    <h3>Refine</h3>
+                    <p>Optionally rerank or compress context so the generator sees cleaner, more targeted evidence.</p>
+                </div>
+                <div class="flow-node reveal">
+                    <span class="flow-index">F</span>
+                    <h3>Generate</h3>
+                    <p>Produce grounded answers with citations, then evaluate them for faithfulness, relevancy, and numerical accuracy.</p>
+                </div>
+            </div>
+        </section>
 
-                <div class="chart-card reveal">
-                    <div class="chart-header">
-                        <div>
-                            <p class="chart-kicker" id="metricLabel">Faithfulness</p>
-                            <h3 id="metricTitle">Grounded answers peak with reranking.</h3>
+        <section class="section" id="variants">
+            <div class="section-header reveal">
+                <p class="eyebrow">Pipeline Variants</p>
+                <h2>Each version adds one more retrieval capability.</h2>
+            </div>
+
+            <div class="variant-tabs reveal" role="tablist" aria-label="FinSight variants">
+                <button class="variant-tab active" role="tab" aria-selected="true" data-variant="v0">V0</button>
+                <button class="variant-tab" role="tab" aria-selected="false" data-variant="v1">V1</button>
+                <button class="variant-tab" role="tab" aria-selected="false" data-variant="v2">V2</button>
+                <button class="variant-tab" role="tab" aria-selected="false" data-variant="v3">V3</button>
+                <button class="variant-tab" role="tab" aria-selected="false" data-variant="v4">V4</button>
+                <button class="variant-tab" role="tab" aria-selected="false" data-variant="v5">V5</button>
+                <button class="variant-tab" role="tab" aria-selected="false" data-variant="v6">V6</button>
+            </div>
+
+            <div class="variant-panel reveal">
+                <div class="variant-header">
+                    <span class="variant-pill" id="variantTag">V0</span>
+                    <h3 id="variantTitle">LLM-only baseline</h3>
+                </div>
+                <p class="variant-summary" id="variantSummary">No retrieval. The model answers from parametric memory, which makes it fluent but weakly grounded.</p>
+                <div class="variant-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Pipeline</span>
+                        <p class="detail-value" id="variantPipeline">Generate only</p>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Primary use</span>
+                        <p class="detail-value" id="variantUse">Establish the hallucination floor.</p>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Strength</span>
+                        <p class="detail-value" id="variantStrength">Fast and simple.</p>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Trade-off</span>
+                        <p class="detail-value" id="variantTradeoff">Unsupported claims and no evidence traceability.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="results">
+            <div class="section-header reveal">
+                <p class="eyebrow">Evaluation</p>
+                <h2>What the results actually showed.</h2>
+            </div>
+
+            <div class="results-highlights reveal">
+                <article class="highlight-card">
+                    <span class="highlight-kicker">Best faithfulness</span>
+                    <strong class="highlight-value">V2 - 0.843</strong>
+                    <p>Reranking was the most efficient way to improve grounding.</p>
+                </article>
+                <article class="highlight-card">
+                    <span class="highlight-kicker">Best relevancy</span>
+                    <strong class="highlight-value">V4 - 0.784</strong>
+                    <p>Query rewriting improved coverage and ambiguity handling.</p>
+                </article>
+                <article class="highlight-card">
+                    <span class="highlight-kicker">Best numerical accuracy</span>
+                    <strong class="highlight-value">V3 - 0.600</strong>
+                    <p>Hybrid retrieval helped recover exact figures and finance terms.</p>
+                </article>
+                <article class="highlight-card">
+                    <span class="highlight-kicker">Fastest grounded</span>
+                    <strong class="highlight-value">V1 - 3.46s</strong>
+                    <p>Dense retrieval alone was already strong on simple factual questions.</p>
+                </article>
+            </div>
+
+            <div class="metric-tabs reveal" role="tablist" aria-label="Metrics">
+                <button class="metric-tab active" data-metric="faithfulness">Faithfulness</button>
+                <button class="metric-tab" data-metric="relevancy">Relevancy</button>
+                <button class="metric-tab" data-metric="numerical">Numerical accuracy</button>
+                <button class="metric-tab" data-metric="latency">Latency</button>
+            </div>
+
+            <div class="chart-card reveal">
+                <div class="chart-header">
+                    <p class="chart-kicker" id="metricLabel">Faithfulness</p>
+                    <h3 id="metricTitle">Grounded answers peak with reranking.</h3>
+                    <p class="chart-caption" id="metricCaption">Higher is better. Faithfulness measures whether answer claims are supported by retrieved evidence.</p>
+                </div>
+                <div class="bar-chart" id="barChart" aria-live="polite"></div>
+            </div>
+
+            <div class="notes-grid reveal">
+                <article class="note-card">
+                    <h3>Simple questions</h3>
+                    <p>Dense retrieval was usually enough for factual lookups. More complex retrieval stages often added little value there.</p>
+                </article>
+                <article class="note-card">
+                    <h3>Temporal and comparative questions</h3>
+                    <p>Broader retrieval mattered more because the system had to align multiple periods or comparison targets, not just find one fact.</p>
+                </article>
+                <article class="note-card">
+                    <h3>Main takeaway</h3>
+                    <p>The bottleneck shifts with task complexity: first precision, then coverage, then structure. There is no universally best pipeline.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section" id="metrics-guide">
+            <div class="section-header reveal">
+                <p class="eyebrow">Metric Guide</p>
+                <h2>How the versions were compared.</h2>
+            </div>
+            <div class="metrics-grid reveal">
+                <article class="metric-card">
+                    <h3>Faithfulness</h3>
+                    <p>Checks whether answer claims are supported by the retrieved evidence. This is the grounding metric.</p>
+                </article>
+                <article class="metric-card">
+                    <h3>Answer relevancy</h3>
+                    <p>Measures whether the response actually addresses the user&apos;s question instead of staying narrowly correct but incomplete.</p>
+                </article>
+                <article class="metric-card">
+                    <h3>Context recall</h3>
+                    <p>Tests whether retrieval surfaced the evidence needed to answer the question in the first place.</p>
+                </article>
+                <article class="metric-card">
+                    <h3>Context precision</h3>
+                    <p>Measures how much of the retrieved context was useful rather than noisy or irrelevant.</p>
+                </article>
+                <article class="metric-card">
+                    <h3>Numerical accuracy</h3>
+                    <p>Custom finance metric that checks whether the answer includes the correct figures from the ground truth.</p>
+                </article>
+                <article class="metric-card">
+                    <h3>Latency</h3>
+                    <p>Captures the runtime cost of each pipeline, which matters because extra retrieval stages are not free.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section" id="limitations">
+            <div class="section-header reveal">
+                <p class="eyebrow">Limitations And Improvements</p>
+                <h2>What the current system still struggles with.</h2>
+                <p style="color: var(--muted-foreground); margin-top: 0.75rem;">The report identifies a clear next step: improve evidence structure before trying to push generation harder.</p>
+            </div>
+            <div class="paired-grid">
+                <div class="panel-card reveal">
+                    <h3>Current limitations</h3>
+                    <ul class="bullet-list">
+                        <li>Fixed-size chunking can split tables and financial rows across boundaries.</li>
+                        <li>No table-aware parsing makes dense numeric extraction unreliable in statement-heavy pages.</li>
+                        <li>The benchmark is small at 20 questions, which limits statistical confidence.</li>
+                        <li>V5 depends heavily on consistent metadata tagging at ingest time.</li>
+                        <li>The study is scoped to Microsoft only, so cross-company generalisation is still untested.</li>
+                        <li>LLM outputs can still vary slightly across runs even with a fixed seed and temperature 0.</li>
+                    </ul>
+                </div>
+                <div class="panel-card reveal">
+                    <h3>Most useful improvements</h3>
+                    <ul class="bullet-list">
+                        <li>Table-aware chunking to keep statement rows intact.</li>
+                        <li>Semantic section-aware chunking for MD&amp;A, risk factors, and financial statements.</li>
+                        <li>Adaptive runtime routing so query type selects the best variant automatically.</li>
+                        <li>A larger benchmark with 50+ questions and more analyst-style prompts.</li>
+                        <li>Fine-tuned embeddings for fiscal periods, financial terminology, and segment names.</li>
+                        <li>Retrieval-level metrics such as MRR and top-k hit rate for cleaner error diagnosis.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="guardrails">
+            <div class="section-header reveal">
+                <p class="eyebrow">Guardrails</p>
+                <h2>How the system reduces risk when answering financial questions.</h2>
+            </div>
+
+            <div class="risk-grid reveal">
+                <article class="risk-card">
+                    <span class="risk-level critical">Critical risk</span>
+                    <strong>Hallucination</strong>
+                    <p>Plausible but unsupported figures are the highest-severity failure in financial QA.</p>
+                </article>
+                <article class="risk-card">
+                    <span class="risk-level high">High risk</span>
+                    <strong>Stale or missed filings</strong>
+                    <p>Answers can become outdated if retrieval misses the newest period or the index is not refreshed.</p>
+                </article>
+                <article class="risk-card">
+                    <span class="risk-level medium">Medium risk</span>
+                    <strong>Numerical drift</strong>
+                    <p>The model may round, paraphrase, or simplify figures even when the correct chunk is present.</p>
+                </article>
+                <article class="risk-card">
+                    <span class="risk-level scope">Scope risk</span>
+                    <strong>Out-of-domain prompts</strong>
+                    <p>The system must avoid answering unsupported questions outside Microsoft filings.</p>
+                </article>
+            </div>
+
+            <div class="paired-grid">
+                <div class="panel-card reveal">
+                    <h3>Implemented guardrails</h3>
+                    <ul class="bullet-list">
+                        <li>Insufficient-evidence prompting tells the generator to refuse unsupported claims instead of guessing.</li>
+                        <li>Inline citation requirements make factual answers auditable against retrieved chunks.</li>
+                        <li>Scope filtering rejects non-Microsoft or out-of-topic prompts.</li>
+                        <li>Temperature 0 reduces variation in numeric wording and outputs.</li>
+                    </ul>
+                </div>
+                <div class="panel-card reveal">
+                    <h3>Residual risks and next mitigations</h3>
+                    <ul class="bullet-list">
+                        <li>Automate EDGAR ingestion so stale filings are indexed immediately.</li>
+                        <li>Add post-processing checks to verify quoted figures against source chunks verbatim.</li>
+                        <li>Classify prompt intent and sanitise adversarial or ambiguous inputs before retrieval.</li>
+                        <li>Re-embed indexes when the embedding model changes to prevent index drift.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="conclusion">
+            <div class="section-header reveal">
+                <p class="eyebrow">Conclusion</p>
+                <h2>No single pipeline wins. Query type should drive the design.</h2>
+            </div>
+
+            <div class="conclusion-hero reveal">
+                <p>The report&apos;s central result is that RAG components provide selective, query-type-dependent benefits. Financial QA improves most when the system matches the pipeline to the task instead of forcing every query through one universal stack.</p>
+            </div>
+
+            <div class="notes-grid reveal">
+                <article class="note-card">
+                    <h3>Balanced recommendation</h3>
+                    <p>Use V2 when faithfulness is the priority. It delivered the best grounding per unit of added latency.</p>
+                </article>
+                <article class="note-card">
+                    <h3>Cross-period baseline</h3>
+                    <p>Use hybrid retrieval as the minimum viable setup for temporal and comparative queries. Dense-only retrieval is too narrow for multi-period evidence.</p>
+                </article>
+                <article class="note-card">
+                    <h3>Hardest unresolved issue</h3>
+                    <p>The main bottleneck is evidence misalignment: retrieving related documents is not enough if they are not organised into a usable reasoning structure.</p>
+                </article>
+            </div>
+
+            <div class="paired-grid reveal" style="margin-top: 2rem;">
+                <div class="panel-card">
+                    <h3>Routing recommendations</h3>
+                    <ul class="bullet-list">
+                        <li>Factual queries: V1 or V2</li>
+                        <li>Temporal queries: V3</li>
+                        <li>Comparative queries: V4 or V6</li>
+                        <li>Multi-hop queries: V6</li>
+                        <li>Fast single-period lookups: V5</li>
+                    </ul>
+                </div>
+                <div class="panel-card">
+                    <h3>Final takeaway</h3>
+                    <p>FinSight&apos;s main contribution is not only the application itself, but the controlled framework for testing how retrieval, reranking, rewriting, filtering, and compression behave across different financial reasoning tasks.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="team">
+            <div class="section-header reveal">
+                <p class="eyebrow">Team</p>
+                <h2>The project team behind FinSight.</h2>
+            </div>
+            <div class="team-grid reveal">
+                <article class="team-card">
+                    <span class="team-kicker">Teammate</span>
+                    <strong>Si Ken</strong>
+                </article>
+                <article class="team-card">
+                    <span class="team-kicker">Teammate</span>
+                    <strong>Ashraf</strong>
+                </article>
+                <article class="team-card">
+                    <span class="team-kicker">Teammate</span>
+                    <strong>Nicholas Ang</strong>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>FinSight - IS469 Final Project - Vibe-coded with love</p>
+    </footer>
+
+    <script>
+        // Variant data
+        const variants = {
+            v0: {
+                tag: 'V0',
+                title: 'LLM-only baseline',
+                summary: 'No retrieval. The model answers from parametric memory, which makes it fluent but weakly grounded.',
+                pipeline: 'Generate only',
+                use: 'Establish the hallucination floor.',
+                strength: 'Fast and simple.',
+                tradeoff: 'Unsupported claims and no evidence traceability.'
+            },
+            v1: {
+                tag: 'V1',
+                title: 'Dense retrieval',
+                summary: 'Adds semantic search with vector embeddings. The system now retrieves relevant evidence before answering.',
+                pipeline: 'Embed → Retrieve → Generate',
+                use: 'Simple factual questions.',
+                strength: 'Good grounding at low latency.',
+                tradeoff: 'Misses keyword-exact matches like ticker symbols.'
+            },
+            v2: {
+                tag: 'V2',
+                title: 'Dense + Rerank',
+                summary: 'Adds a cross-encoder reranker after dense retrieval to improve evidence ordering.',
+                pipeline: 'Embed → Retrieve → Rerank → Generate',
+                use: 'High-fidelity answers when grounding matters most.',
+                strength: 'Best faithfulness score (0.843).',
+                tradeoff: 'Higher latency from the reranking step.'
+            },
+            v3: {
+                tag: 'V3',
+                title: 'Hybrid retrieval',
+                summary: 'Combines dense and BM25 sparse retrieval for better coverage of exact terms and semantic matches.',
+                pipeline: 'Dense + Sparse → Merge → Generate',
+                use: 'Temporal questions and finance terms.',
+                strength: 'Best numerical accuracy (0.600).',
+                tradeoff: 'Index maintenance for two retrieval systems.'
+            },
+            v4: {
+                tag: 'V4',
+                title: 'Query rewriting',
+                summary: 'Adds LLM-based query expansion to handle ambiguous or multi-part questions.',
+                pipeline: 'Rewrite → Retrieve → Generate',
+                use: 'Ambiguous or complex queries.',
+                strength: 'Best answer relevancy (0.784).',
+                tradeoff: 'Additional LLM call increases latency.'
+            },
+            v5: {
+                tag: 'V5',
+                title: 'Metadata filtering',
+                summary: 'Uses fiscal period and document type metadata to narrow retrieval scope.',
+                pipeline: 'Filter → Retrieve → Generate',
+                use: 'Single-period lookups with known dates.',
+                strength: 'Fast and precise when metadata is clean.',
+                tradeoff: 'Depends on consistent metadata at ingest.'
+            },
+            v6: {
+                tag: 'V6',
+                title: 'Context compression',
+                summary: 'Compresses retrieved chunks before generation to reduce noise and fit more evidence.',
+                pipeline: 'Retrieve → Compress → Generate',
+                use: 'Multi-hop and comparative queries.',
+                strength: 'Handles long evidence chains.',
+                tradeoff: 'Compression may drop useful details.'
+            }
+        };
+
+        // Metrics data
+        const metrics = {
+            faithfulness: {
+                label: 'Faithfulness',
+                title: 'Grounded answers peak with reranking.',
+                caption: 'Higher is better. Faithfulness measures whether answer claims are supported by retrieved evidence.',
+                values: { V0: 0.524, V1: 0.799, V2: 0.843, V3: 0.799, V4: 0.776, V5: 0.758, V6: 0.793 },
+                max: 1
+            },
+            relevancy: {
+                label: 'Relevancy',
+                title: 'Query rewriting improves coverage.',
+                caption: 'Higher is better. Relevancy measures whether the answer actually addresses the user question.',
+                values: { V0: 0.711, V1: 0.746, V2: 0.754, V3: 0.771, V4: 0.784, V5: 0.738, V6: 0.756 },
+                max: 1
+            },
+            numerical: {
+                label: 'Numerical accuracy',
+                title: 'Hybrid retrieval recovers exact figures.',
+                caption: 'Higher is better. Numerical accuracy checks whether figures match the ground truth.',
+                values: { V0: 0.300, V1: 0.500, V2: 0.550, V3: 0.600, V4: 0.550, V5: 0.450, V6: 0.500 },
+                max: 1
+            },
+            latency: {
+                label: 'Latency',
+                title: 'Extra stages add measurable cost.',
+                caption: 'Lower is better. Latency is measured in seconds per query.',
+                values: { V0: 1.89, V1: 3.46, V2: 5.12, V3: 4.78, V4: 6.34, V5: 3.89, V6: 7.21 },
+                max: 10
+            }
+        };
+
+        // Variant tab switching
+        document.querySelectorAll('.variant-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.variant-tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                const v = variants[tab.dataset.variant];
+                document.getElementById('variantTag').textContent = v.tag;
+                document.getElementById('variantTitle').textContent = v.title;
+                document.getElementById('variantSummary').textContent = v.summary;
+                document.getElementById('variantPipeline').textContent = v.pipeline;
+                document.getElementById('variantUse').textContent = v.use;
+                document.getElementById('variantStrength').textContent = v.strength;
+                document.getElementById('variantTradeoff').textContent = v.tradeoff;
+            });
+        });
+
+        // Metric switching and chart rendering
+        function renderChart(metricKey) {
+            const m = metrics[metricKey];
+            const chart = document.getElementById('barChart');
+            chart.innerHTML = '';
+
+            document.getElementById('metricLabel').textContent = m.label;
+            document.getElementById('metricTitle').textContent = m.title;
+            document.getElementById('metricCaption').textContent = m.caption;
+
+            Object.entries(m.values).forEach(([label, value]) => {
+                const row = document.createElement('div');
+                row.className = 'bar-row';
+
+                const percent = (value / m.max) * 100;
+                const displayValue = metricKey === 'latency' ? value.toFixed(2) + 's' : value.toFixed(3);
+
+                row.innerHTML = `
+                    <span class="bar-label">${label}</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: ${percent}%">
+                            <span class="bar-value">${displayValue}</span>
                         </div>
-                        <p class="chart-caption" id="metricCaption">Higher is better. Faithfulness measures whether answer claims are supported by retrieved evidence.</p>
                     </div>
-                    <div class="bar-chart" id="barChart" aria-live="polite"></div>
-                </div>
+                `;
+                chart.appendChild(row);
+            });
+        }
 
-                <div class="results-notes reveal">
-                    <article class="note-card">
-                        <h3>Simple questions</h3>
-                        <p>Dense retrieval was usually enough for factual lookups. More complex retrieval stages often added little value there.</p>
-                    </article>
-                    <article class="note-card">
-                        <h3>Temporal and comparative questions</h3>
-                        <p>Broader retrieval mattered more because the system had to align multiple periods or comparison targets, not just find one fact.</p>
-                    </article>
-                    <article class="note-card">
-                        <h3>Main takeaway</h3>
-                        <p>The bottleneck shifts with task complexity: first precision, then coverage, then structure. There is no universally best pipeline.</p>
-                    </article>
-                </div>
-            </section>
+        document.querySelectorAll('.metric-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.metric-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                renderChart(tab.dataset.metric);
+            });
+        });
 
-            <section class="section metrics-section">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">Metric Guide</p>
-                    <h2>How the versions were compared.</h2>
-                </div>
-                <div class="metrics-grid reveal">
-                    <article class="metric-card">
-                        <h3>Faithfulness</h3>
-                        <p>Checks whether answer claims are supported by the retrieved evidence. This is the grounding metric.</p>
-                    </article>
-                    <article class="metric-card">
-                        <h3>Answer relevancy</h3>
-                        <p>Measures whether the response actually addresses the user’s question instead of staying narrowly correct but incomplete.</p>
-                    </article>
-                    <article class="metric-card">
-                        <h3>Context recall</h3>
-                        <p>Tests whether retrieval surfaced the evidence needed to answer the question in the first place.</p>
-                    </article>
-                    <article class="metric-card">
-                        <h3>Context precision</h3>
-                        <p>Measures how much of the retrieved context was useful rather than noisy or irrelevant.</p>
-                    </article>
-                    <article class="metric-card">
-                        <h3>Numerical accuracy</h3>
-                        <p>Custom finance metric that checks whether the answer includes the correct figures from the ground truth.</p>
-                    </article>
-                    <article class="metric-card">
-                        <h3>Latency</h3>
-                        <p>Captures the runtime cost of each pipeline, which matters because extra retrieval stages are not free.</p>
-                    </article>
-                </div>
-            </section>
+        // Initial chart render
+        renderChart('faithfulness');
 
-            <section class="section limitations-section" id="limitations">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">Limitations And Improvements</p>
-                    <h2>What the current system still struggles with.</h2>
-                    <p>The report identifies a clear next step: improve evidence structure before trying to push generation harder.</p>
-                </div>
-                <div class="paired-grid">
-                    <div class="panel-card reveal">
-                        <h3>Current limitations</h3>
-                        <ul class="bullet-list">
-                            <li>Fixed-size chunking can split tables and financial rows across boundaries.</li>
-                            <li>No table-aware parsing makes dense numeric extraction unreliable in statement-heavy pages.</li>
-                            <li>The benchmark is small at 20 questions, which limits statistical confidence.</li>
-                            <li>V5 depends heavily on consistent metadata tagging at ingest time.</li>
-                            <li>The study is scoped to Microsoft only, so cross-company generalisation is still untested.</li>
-                            <li>LLM outputs can still vary slightly across runs even with a fixed seed and temperature 0.</li>
-                        </ul>
-                    </div>
-                    <div class="panel-card reveal">
-                        <h3>Most useful improvements</h3>
-                        <ul class="bullet-list">
-                            <li>Table-aware chunking to keep statement rows intact.</li>
-                            <li>Semantic section-aware chunking for MD&amp;A, risk factors, and financial statements.</li>
-                            <li>Adaptive runtime routing so query type selects the best variant automatically.</li>
-                            <li>A larger benchmark with 50+ questions and more analyst-style prompts.</li>
-                            <li>Fine-tuned embeddings for fiscal periods, financial terminology, and segment names.</li>
-                            <li>Retrieval-level metrics such as MRR and top-k hit rate for cleaner error diagnosis.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
+        // Reveal on scroll
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-            <section class="section guardrails-section" id="guardrails">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">Guardrails</p>
-                    <h2>How the system reduces risk when answering financial questions.</h2>
-                </div>
-                <div class="results-highlight reveal">
-                    <article>
-                        <span class="results-kicker">Critical risk</span>
-                        <strong>Hallucination</strong>
-                        <p>Plausible but unsupported figures are the highest-severity failure in financial QA.</p>
-                    </article>
-                    <article>
-                        <span class="results-kicker">High risk</span>
-                        <strong>Stale or missed filings</strong>
-                        <p>Answers can become outdated if retrieval misses the newest period or the index is not refreshed.</p>
-                    </article>
-                    <article>
-                        <span class="results-kicker">Medium risk</span>
-                        <strong>Numerical drift</strong>
-                        <p>The model may round, paraphrase, or simplify figures even when the correct chunk is present.</p>
-                    </article>
-                    <article>
-                        <span class="results-kicker">Scope risk</span>
-                        <strong>Out-of-domain prompts</strong>
-                        <p>The system must avoid answering unsupported questions outside Microsoft filings.</p>
-                    </article>
-                </div>
-
-                <div class="paired-grid guardrail-grid">
-                    <div class="panel-card reveal">
-                        <h3>Implemented guardrails</h3>
-                        <ul class="bullet-list">
-                            <li>Insufficient-evidence prompting tells the generator to refuse unsupported claims instead of guessing.</li>
-                            <li>Inline citation requirements make factual answers auditable against retrieved chunks.</li>
-                            <li>Scope filtering rejects non-Microsoft or out-of-topic prompts.</li>
-                            <li>Temperature 0 reduces variation in numeric wording and outputs.</li>
-                        </ul>
-                    </div>
-                    <div class="panel-card reveal">
-                        <h3>Residual risks and next mitigations</h3>
-                        <ul class="bullet-list">
-                            <li>Automate EDGAR ingestion so stale filings are indexed immediately.</li>
-                            <li>Add post-processing checks to verify quoted figures against source chunks verbatim.</li>
-                            <li>Classify prompt intent and sanitise adversarial or ambiguous inputs before retrieval.</li>
-                            <li>Re-embed indexes when the embedding model changes to prevent index drift.</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
-            <section class="section conclusion-section" id="conclusion">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">Conclusion</p>
-                    <h2>No single pipeline wins. Query type should drive the design.</h2>
-                </div>
-                <div class="conclusion-hero reveal">
-                    <p>
-                        The report’s central result is that RAG components provide selective, query-type-dependent benefits. Financial QA improves most when the system matches the pipeline to the task instead of forcing every query through one universal stack.
-                    </p>
-                </div>
-                <div class="results-notes reveal">
-                    <article class="note-card">
-                        <h3>Balanced recommendation</h3>
-                        <p>Use V2 when faithfulness is the priority. It delivered the best grounding per unit of added latency.</p>
-                    </article>
-                    <article class="note-card">
-                        <h3>Cross-period baseline</h3>
-                        <p>Use hybrid retrieval as the minimum viable setup for temporal and comparative queries. Dense-only retrieval is too narrow for multi-period evidence.</p>
-                    </article>
-                    <article class="note-card">
-                        <h3>Hardest unresolved issue</h3>
-                        <p>The main bottleneck is evidence misalignment: retrieving related documents is not enough if they are not organised into a usable reasoning structure.</p>
-                    </article>
-                </div>
-                <div class="paired-grid reveal">
-                    <div class="panel-card">
-                        <h3>Routing recommendations</h3>
-                        <ul class="bullet-list">
-                            <li>Factual queries: V1 or V2</li>
-                            <li>Temporal queries: V3</li>
-                            <li>Comparative queries: V4 or V6</li>
-                            <li>Multi-hop queries: V6</li>
-                            <li>Fast single-period lookups: V5</li>
-                        </ul>
-                    </div>
-                    <div class="panel-card">
-                        <h3>Final takeaway</h3>
-                        <p>
-                            FinSight’s main contribution is not only the application itself, but the controlled framework for testing how retrieval, reranking, rewriting, filtering, and compression behave across different financial reasoning tasks.
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <section class="section team-section" id="team">
-                <div class="section-heading reveal">
-                    <p class="eyebrow">Team</p>
-                    <h2>The project team behind FinSight.</h2>
-                </div>
-                <div class="results-highlight reveal">
-                    <article>
-                        <span class="results-kicker">Teammate</span>
-                        <strong>Si Ken</strong>
-                    </article>
-                    <article>
-                        <span class="results-kicker">Teammate</span>
-                        <strong>Ashraf</strong>
-                    </article>
-                    <article>
-                        <span class="results-kicker">Teammate</span>
-                        <strong>Nicholas Ang</strong>
-                    </article>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <script src="./script.js"></script>
+        revealElements.forEach(el => revealObserver.observe(el));
+    </script>
 </body>
 </html>
