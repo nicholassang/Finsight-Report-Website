@@ -4,40 +4,1016 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinSight | Financial Filings RAG Research</title>
-    <meta
-        name="description"
-        content="FinSight is a domain-specific RAG system for Microsoft SEC filings, comparing seven retrieval pipelines across factual, temporal, multi-hop, and comparative financial QA tasks."
-    >
+    <meta name="description" content="FinSight is a domain-specific RAG system for Microsoft SEC filings, comparing seven retrieval pipelines across factual, temporal, multi-hop, and comparative financial QA tasks.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./styles.css">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --background: #0c0c1d;
+            --background-alt: #12122a;
+            --foreground: #f4f4f8;
+            --card: #161630;
+            --card-hover: #1c1c40;
+            --muted: #252545;
+            --muted-foreground: #9898b8;
+            --border: #2a2a50;
+            --primary: #8b5cf6;
+            --primary-light: #a78bfa;
+            --accent: #06b6d4;
+            --accent-light: #22d3ee;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius: 12px;
+            --font-sans: 'Space Grotesk', system-ui, sans-serif;
+            --font-serif: 'Source Serif 4', Georgia, serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(12, 12, 29, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .topbar-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0.875rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--foreground);
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.375rem;
+            color: white;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .brand-copy strong {
+            display: block;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .brand-copy span {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+        }
+
+        .nav-links {
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .nav-links {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+        }
+
+        .nav-links a {
+            padding: 0.5rem 0.875rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--foreground);
+            background: var(--muted);
+        }
+
+        /* Page Shell */
+        .page-shell {
+            min-height: 100vh;
+        }
+
+        main {
+            padding-top: 72px;
+        }
+
+        /* Sections */
+        .section {
+            padding: 6rem 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-heading {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--primary-light);
+            margin-bottom: 0.75rem;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(2.25rem, 5vw, 3.5rem);
+            font-weight: 600;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            text-wrap: balance;
+        }
+
+        h2 {
+            font-family: var(--font-serif);
+            font-size: clamp(1.625rem, 3vw, 2.25rem);
+            font-weight: 600;
+            line-height: 1.25;
+            letter-spacing: -0.01em;
+            text-wrap: balance;
+        }
+
+        h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: calc(100vh - 72px);
+            display: grid;
+            gap: 3rem;
+            align-items: center;
+            padding-top: 3rem;
+            padding-bottom: 4rem;
+        }
+
+        @media (min-width: 1024px) {
+            .hero {
+                grid-template-columns: 1fr 1fr;
+                gap: 4rem;
+            }
+        }
+
+        .vibe-note {
+            display: inline-block;
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-copy .eyebrow {
+            margin-bottom: 1rem;
+        }
+
+        .hero-lead {
+            font-size: 1.0625rem;
+            color: var(--muted-foreground);
+            margin-top: 1.25rem;
+            max-width: 520px;
+            line-height: 1.7;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8125rem 1.5rem;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            border-radius: 10px;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.25s ease;
+        }
+
+        .button-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.25);
+        }
+
+        .button-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.35);
+        }
+
+        .button-secondary {
+            background: var(--muted);
+            color: var(--foreground);
+            border: 1px solid var(--border);
+        }
+
+        .button-secondary:hover {
+            background: var(--card-hover);
+            border-color: var(--primary);
+        }
+
+        .hero-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            list-style: none;
+        }
+
+        .hero-metrics li {
+            text-align: center;
+        }
+
+        .metric-value {
+            display: block;
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-label {
+            display: block;
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+            margin-top: 0.25rem;
+        }
+
+        /* Hero Visual */
+        .hero-visual {
+            position: relative;
+            height: 420px;
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .hero-visual {
+                display: block;
+            }
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+        }
+
+        .orb-large {
+            width: 350px;
+            height: 350px;
+            background: var(--primary);
+            opacity: 0.25;
+            top: 5%;
+            right: 10%;
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        .orb-small {
+            width: 220px;
+            height: 220px;
+            background: var(--accent);
+            opacity: 0.2;
+            bottom: 15%;
+            left: 5%;
+            animation: pulse 8s ease-in-out infinite 2s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.25; }
+            50% { transform: scale(1.1); opacity: 0.35; }
+        }
+
+        .signal-card {
+            position: absolute;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+        }
+
+        .signal-card-top {
+            top: 18%;
+            right: 8%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .signal-card-bottom {
+            bottom: 22%;
+            left: 3%;
+            animation: float 6s ease-in-out infinite 1.5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        .signal-kicker {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary-light);
+            margin-bottom: 0.25rem;
+        }
+
+        .signal-card strong {
+            display: block;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .signal-card > span:last-child {
+            font-size: 0.8125rem;
+            color: var(--muted-foreground);
+        }
+
+        .architecture-stack {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.625rem;
+        }
+
+        .architecture-stack span {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.125rem;
+            background: var(--muted);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            opacity: 0;
+            animation: stackIn 0.5s ease forwards;
+        }
+
+        .architecture-stack span:nth-child(1) { animation-delay: 0.1s; }
+        .architecture-stack span:nth-child(2) { animation-delay: 0.2s; }
+        .architecture-stack span:nth-child(3) { animation-delay: 0.3s; }
+        .architecture-stack span:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes stackIn {
+            from { opacity: 0; transform: translateX(-12px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .architecture-stack span::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        /* Timeline Section */
+        .timeline {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .timeline {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .timeline {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .timeline-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .timeline-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.15);
+        }
+
+        .timeline-step {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+            color: var(--primary-light);
+            border-radius: 10px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .timeline-card h3 {
+            margin-bottom: 0.625rem;
+        }
+
+        .timeline-card p {
+            font-size: 0.9375rem;
+            color: var(--muted-foreground);
+            line-height: 1.65;
+        }
+
+        /* Flow Section */
+        .flow-grid {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 640px) {
+            .flow-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .flow-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .flow-node {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            padding-top: 2rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .flow-node:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .flow-index {
+            position: absolute;
+            top: -14px;
+            left: 1.5rem;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+
+        .flow-node h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-node p {
+            font-size: 0.9375rem;
+            color: var(--muted-foreground);
+        }
+
+        /* Variants Section */
+        .variant-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            padding: 0.375rem;
+            background: var(--muted);
+            border-radius: var(--radius);
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .variant-tab {
+            padding: 0.625rem 1.125rem;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            background: transparent;
+            border: none;
+            border-radius: calc(var(--radius) - 4px);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .variant-tab:hover {
+            color: var(--foreground);
+        }
+
+        .variant-tab.active {
+            background: var(--card);
+            color: var(--foreground);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .variant-panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            max-width: 840px;
+            margin: 0 auto;
+        }
+
+        .variant-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .variant-pill {
+            padding: 0.375rem 0.875rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+
+        .variant-panel > p {
+            color: var(--muted-foreground);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+
+        .variant-detail-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        @media (min-width: 640px) {
+            .variant-detail-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .variant-detail-grid > div {
+            padding: 1.125rem;
+            background: var(--muted);
+            border-radius: calc(var(--radius) - 4px);
+        }
+
+        .detail-label {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted-foreground);
+            margin-bottom: 0.5rem;
+        }
+
+        .variant-detail-grid p {
+            font-size: 0.9375rem;
+            color: var(--foreground);
+        }
+
+        /* Results Section */
+        .results-highlight {
+            display: grid;
+            gap: 1.25rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (min-width: 640px) {
+            .results-highlight {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .results-highlight {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .results-highlight article {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .results-highlight article:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .results-kicker {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .results-highlight strong {
+            display: block;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .results-highlight p {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+            line-height: 1.5;
+        }
+
+        /* Metric Switcher */
+        .metric-switcher {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+        }
+
+        .metric-button {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--muted-foreground);
+            background: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .metric-button:hover {
+            color: var(--foreground);
+            border-color: var(--primary);
+        }
+
+        .metric-button.active {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Chart Card */
+        .chart-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .chart-header {
+            margin-bottom: 1.75rem;
+        }
+
+        .chart-kicker {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary-light);
+            margin-bottom: 0.375rem;
+        }
+
+        .chart-header h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .chart-caption {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 0.875rem;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .bar-label {
+            width: 36px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--muted-foreground);
+            flex-shrink: 0;
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 32px;
+            background: var(--muted);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 0.75rem;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bar-value {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Results Notes */
+        .results-notes {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 768px) {
+            .results-notes {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .note-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+        }
+
+        .note-card h3 {
+            margin-bottom: 0.625rem;
+            color: var(--foreground);
+        }
+
+        .note-card p {
+            font-size: 0.9375rem;
+            color: var(--muted-foreground);
+            line-height: 1.65;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        @media (min-width: 640px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .metrics-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .metric-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: var(--primary);
+        }
+
+        .metric-card h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-card p {
+            font-size: 0.9375rem;
+            color: var(--muted-foreground);
+            line-height: 1.6;
+        }
+
+        /* Paired Grid */
+        .paired-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .paired-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .panel-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+        }
+
+        .panel-card h3 {
+            margin-bottom: 1rem;
+        }
+
+        .bullet-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .bullet-list li {
+            position: relative;
+            padding-left: 1.25rem;
+            font-size: 0.9375rem;
+            color: var(--muted-foreground);
+            line-height: 1.6;
+        }
+
+        .bullet-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.625rem;
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        /* Conclusion */
+        .conclusion-hero {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2.5rem;
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        .conclusion-hero p {
+            font-family: var(--font-serif);
+            font-size: 1.1875rem;
+            line-height: 1.75;
+            color: var(--foreground);
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        /* Team Section */
+        .team-section .results-highlight {
+            justify-content: center;
+        }
+
+        @media (min-width: 1024px) {
+            .team-section .results-highlight {
+                grid-template-columns: repeat(3, 1fr);
+                max-width: 840px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+        }
+
+        /* Reveal Animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Risk Colors */
+        .risk-critical { color: var(--danger); }
+        .risk-high { color: var(--warning); }
+        .risk-medium { color: #f97316; }
+        .risk-scope { color: var(--accent); }
+
+        /* Footer spacing */
+        .team-section {
+            padding-bottom: 8rem;
+        }
+    </style>
 </head>
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a class="brand" href="#hero">
-                <span class="brand-mark">F</span>
-                <span class="brand-copy">
-                    <strong>FinSight</strong>
-                    <span>RAG research for SEC filings</span>
-                </span>
-            </a>
-            <nav class="nav-links" aria-label="Primary navigation">
-                <a href="#story">Story</a>
-                <a href="#variants">Variants</a>
-                <a href="#results">Results</a>
-                <a href="#limitations">Limits</a>
-                <a href="#guardrails">Guardrails</a>
-                <a href="#conclusion">Conclusion</a>
-                <a href="#deploy">Deploy</a>
-            </nav>
+            <div class="topbar-inner">
+                <a class="brand" href="#hero">
+                    <span class="brand-mark">F</span>
+                    <span class="brand-copy">
+                        <strong>FinSight</strong>
+                        <span>RAG research for SEC filings</span>
+                    </span>
+                </a>
+                <nav class="nav-links" aria-label="Primary navigation">
+                    <a href="#story">Story</a>
+                    <a href="#variants">Variants</a>
+                    <a href="#results">Results</a>
+                    <a href="#limitations">Limits</a>
+                    <a href="#guardrails">Guardrails</a>
+                    <a href="#conclusion">Conclusion</a>
+                </nav>
+            </div>
         </header>
 
         <main>
             <section class="hero section" id="hero">
                 <div class="hero-copy">
-                    <p class="vibe-note">Vibe-coded with love ❤️</p>
+                    <p class="vibe-note">Vibe-coded with love</p>
                     <p class="eyebrow">IS469 Final Project</p>
                     <h1>From raw Microsoft filings to grounded financial QA.</h1>
                     <p class="hero-lead">
@@ -204,22 +1180,22 @@
                 <div class="results-highlight reveal">
                     <article>
                         <span class="results-kicker">Best faithfulness</span>
-                        <strong>V2 · 0.843</strong>
+                        <strong>V2 - 0.843</strong>
                         <p>Reranking was the most efficient way to improve grounding.</p>
                     </article>
                     <article>
                         <span class="results-kicker">Best relevancy</span>
-                        <strong>V4 · 0.784</strong>
+                        <strong>V4 - 0.784</strong>
                         <p>Query rewriting improved coverage and ambiguity handling.</p>
                     </article>
                     <article>
                         <span class="results-kicker">Best numerical accuracy</span>
-                        <strong>V3 · 0.600</strong>
+                        <strong>V3 - 0.600</strong>
                         <p>Hybrid retrieval helped recover exact figures and finance terms.</p>
                     </article>
                     <article>
                         <span class="results-kicker">Fastest grounded version</span>
-                        <strong>V1 · 3.46s</strong>
+                        <strong>V1 - 3.46s</strong>
                         <p>Dense retrieval alone was already strong on simple factual questions.</p>
                     </article>
                 </div>
@@ -233,10 +1209,8 @@
 
                 <div class="chart-card reveal">
                     <div class="chart-header">
-                        <div>
-                            <p class="chart-kicker" id="metricLabel">Faithfulness</p>
-                            <h3 id="metricTitle">Grounded answers peak with reranking.</h3>
-                        </div>
+                        <p class="chart-kicker" id="metricLabel">Faithfulness</p>
+                        <h3 id="metricTitle">Grounded answers peak with reranking.</h3>
                         <p class="chart-caption" id="metricCaption">Higher is better. Faithfulness measures whether answer claims are supported by retrieved evidence.</p>
                     </div>
                     <div class="bar-chart" id="barChart" aria-live="polite"></div>
@@ -270,7 +1244,7 @@
                     </article>
                     <article class="metric-card">
                         <h3>Answer relevancy</h3>
-                        <p>Measures whether the response actually addresses the user’s question instead of staying narrowly correct but incomplete.</p>
+                        <p>Measures whether the response actually addresses the user's question instead of staying narrowly correct but incomplete.</p>
                     </article>
                     <article class="metric-card">
                         <h3>Context recall</h3>
@@ -295,7 +1269,7 @@
                 <div class="section-heading reveal">
                     <p class="eyebrow">Limitations And Improvements</p>
                     <h2>What the current system still struggles with.</h2>
-                    <p>The report identifies a clear next step: improve evidence structure before trying to push generation harder.</p>
+                    <p style="color: var(--muted-foreground); margin-top: 1rem; max-width: 640px; margin-left: auto; margin-right: auto;">The report identifies a clear next step: improve evidence structure before trying to push generation harder.</p>
                 </div>
                 <div class="paired-grid">
                     <div class="panel-card reveal">
@@ -330,22 +1304,22 @@
                 </div>
                 <div class="results-highlight reveal">
                     <article>
-                        <span class="results-kicker">Critical risk</span>
+                        <span class="results-kicker risk-critical">Critical risk</span>
                         <strong>Hallucination</strong>
                         <p>Plausible but unsupported figures are the highest-severity failure in financial QA.</p>
                     </article>
                     <article>
-                        <span class="results-kicker">High risk</span>
+                        <span class="results-kicker risk-high">High risk</span>
                         <strong>Stale or missed filings</strong>
                         <p>Answers can become outdated if retrieval misses the newest period or the index is not refreshed.</p>
                     </article>
                     <article>
-                        <span class="results-kicker">Medium risk</span>
+                        <span class="results-kicker risk-medium">Medium risk</span>
                         <strong>Numerical drift</strong>
                         <p>The model may round, paraphrase, or simplify figures even when the correct chunk is present.</p>
                     </article>
                     <article>
-                        <span class="results-kicker">Scope risk</span>
+                        <span class="results-kicker risk-scope">Scope risk</span>
                         <strong>Out-of-domain prompts</strong>
                         <p>The system must avoid answering unsupported questions outside Microsoft filings.</p>
                     </article>
@@ -380,7 +1354,7 @@
                 </div>
                 <div class="conclusion-hero reveal">
                     <p>
-                        The report’s central result is that RAG components provide selective, query-type-dependent benefits. Financial QA improves most when the system matches the pipeline to the task instead of forcing every query through one universal stack.
+                        The report's central result is that RAG components provide selective, query-type-dependent benefits. Financial QA improves most when the system matches the pipeline to the task instead of forcing every query through one universal stack.
                     </p>
                 </div>
                 <div class="results-notes reveal">
@@ -410,8 +1384,8 @@
                     </div>
                     <div class="panel-card">
                         <h3>Final takeaway</h3>
-                        <p>
-                            FinSight’s main contribution is not only the application itself, but the controlled framework for testing how retrieval, reranking, rewriting, filtering, and compression behave across different financial reasoning tasks.
+                        <p style="color: var(--muted-foreground); line-height: 1.7;">
+                            FinSight's main contribution is not only the application itself, but the controlled framework for testing how retrieval, reranking, rewriting, filtering, and compression behave across different financial reasoning tasks.
                         </p>
                     </div>
                 </div>
@@ -440,6 +1414,231 @@
         </main>
     </div>
 
-    <script src="./script.js"></script>
+    <script>
+        // Variant data
+        const variants = {
+            v0: {
+                tag: "V0",
+                title: "LLM-only baseline",
+                summary: "No retrieval. The model answers from parametric memory, which makes it fluent but weakly grounded.",
+                pipeline: "Generate only",
+                use: "Establish the hallucination floor.",
+                strength: "Fast and simple.",
+                tradeoff: "Unsupported claims and no evidence traceability."
+            },
+            v1: {
+                tag: "V1",
+                title: "Dense retrieval",
+                summary: "Adds ChromaDB semantic search. The model now has access to evidence chunks before generating answers.",
+                pipeline: "Embed → Retrieve → Generate",
+                use: "Fast factual lookups where semantic similarity is enough.",
+                strength: "Simple pipeline with real grounding.",
+                tradeoff: "Misses lexical matches and finance jargon."
+            },
+            v2: {
+                tag: "V2",
+                title: "Dense + reranking",
+                summary: "Uses a cross-encoder reranker after retrieval. This tightens evidence quality before generation.",
+                pipeline: "Embed → Retrieve → Rerank → Generate",
+                use: "When grounding quality matters more than speed.",
+                strength: "Best faithfulness score (0.843).",
+                tradeoff: "Slower than V1; reranking adds latency."
+            },
+            v3: {
+                tag: "V3",
+                title: "Hybrid retrieval + reranking",
+                summary: "Combines dense and BM25 sparse retrieval. Hybrid search improves term-level coverage for finance keywords.",
+                pipeline: "Dense + Sparse → Fuse → Rerank → Generate",
+                use: "Numerical lookups and financial term matching.",
+                strength: "Best numerical accuracy (0.600).",
+                tradeoff: "More moving parts; requires BM25 index."
+            },
+            v4: {
+                tag: "V4",
+                title: "Hybrid + query rewriting",
+                summary: "Rewrites ambiguous questions before retrieval. This helps surface better context for vague prompts.",
+                pipeline: "Rewrite → Hybrid → Rerank → Generate",
+                use: "When input questions are unclear or need expansion.",
+                strength: "Best answer relevancy (0.784).",
+                tradeoff: "Adds LLM latency for the rewrite step."
+            },
+            v5: {
+                tag: "V5",
+                title: "Hybrid + metadata filtering",
+                summary: "Filters retrieval by fiscal year and form type. Reduces noise when the period is known.",
+                pipeline: "Filter → Hybrid → Rerank → Generate",
+                use: "Single-period lookups with explicit temporal scope.",
+                strength: "Focused context, lower noise.",
+                tradeoff: "Requires accurate metadata at ingest time."
+            },
+            v6: {
+                tag: "V6",
+                title: "Full pipeline + compression",
+                summary: "Adds context compression after retrieval. The generator sees cleaner, shorter evidence.",
+                pipeline: "Rewrite → Hybrid → Rerank → Compress → Generate",
+                use: "Long, multi-hop questions that need structured reasoning.",
+                strength: "Handles complex queries more completely.",
+                tradeoff: "Highest latency of all variants."
+            }
+        };
+
+        // Metric data
+        const metrics = {
+            faithfulness: {
+                label: "Faithfulness",
+                title: "Grounded answers peak with reranking.",
+                caption: "Higher is better. Faithfulness measures whether answer claims are supported by retrieved evidence.",
+                data: [
+                    { label: "V0", value: 0.627 },
+                    { label: "V1", value: 0.775 },
+                    { label: "V2", value: 0.843 },
+                    { label: "V3", value: 0.804 },
+                    { label: "V4", value: 0.735 },
+                    { label: "V5", value: 0.745 },
+                    { label: "V6", value: 0.804 }
+                ],
+                max: 1
+            },
+            relevancy: {
+                label: "Answer Relevancy",
+                title: "Query rewriting expands coverage.",
+                caption: "Higher is better. Relevancy measures how well the answer addresses the full scope of the question.",
+                data: [
+                    { label: "V0", value: 0.667 },
+                    { label: "V1", value: 0.745 },
+                    { label: "V2", value: 0.765 },
+                    { label: "V3", value: 0.755 },
+                    { label: "V4", value: 0.784 },
+                    { label: "V5", value: 0.725 },
+                    { label: "V6", value: 0.765 }
+                ],
+                max: 1
+            },
+            numerical: {
+                label: "Numerical Accuracy",
+                title: "Hybrid retrieval recovers exact figures.",
+                caption: "Higher is better. Measures whether the answer includes the correct financial figures from the ground truth.",
+                data: [
+                    { label: "V0", value: 0.250 },
+                    { label: "V1", value: 0.450 },
+                    { label: "V2", value: 0.550 },
+                    { label: "V3", value: 0.600 },
+                    { label: "V4", value: 0.500 },
+                    { label: "V5", value: 0.550 },
+                    { label: "V6", value: 0.550 }
+                ],
+                max: 1
+            },
+            latency: {
+                label: "Latency (seconds)",
+                title: "Each additional stage adds runtime cost.",
+                caption: "Lower is better. Latency is the average end-to-end time per query in seconds.",
+                data: [
+                    { label: "V0", value: 2.10 },
+                    { label: "V1", value: 3.46 },
+                    { label: "V2", value: 4.82 },
+                    { label: "V3", value: 5.24 },
+                    { label: "V4", value: 6.58 },
+                    { label: "V5", value: 5.12 },
+                    { label: "V6", value: 8.34 }
+                ],
+                max: 10,
+                inverse: true
+            }
+        };
+
+        // Initialize variant tabs
+        document.querySelectorAll('.variant-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.variant-tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                const variantKey = tab.dataset.variant;
+                const data = variants[variantKey];
+
+                document.getElementById('variantTag').textContent = data.tag;
+                document.getElementById('variantTitle').textContent = data.title;
+                document.getElementById('variantSummary').textContent = data.summary;
+                document.getElementById('variantPipeline').textContent = data.pipeline;
+                document.getElementById('variantUse').textContent = data.use;
+                document.getElementById('variantStrength').textContent = data.strength;
+                document.getElementById('variantTradeoff').textContent = data.tradeoff;
+            });
+        });
+
+        // Initialize metric tabs and chart
+        function renderChart(metricKey) {
+            const metric = metrics[metricKey];
+            const chart = document.getElementById('barChart');
+            
+            document.getElementById('metricLabel').textContent = metric.label;
+            document.getElementById('metricTitle').textContent = metric.title;
+            document.getElementById('metricCaption').textContent = metric.caption;
+
+            chart.innerHTML = metric.data.map(item => {
+                const percentage = (item.value / metric.max) * 100;
+                const displayValue = metricKey === 'latency' ? item.value.toFixed(2) + 's' : item.value.toFixed(3);
+                return `
+                    <div class="bar-row">
+                        <span class="bar-label">${item.label}</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width: ${percentage}%">
+                                <span class="bar-value">${displayValue}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Trigger animation
+            setTimeout(() => {
+                chart.querySelectorAll('.bar-fill').forEach((bar, i) => {
+                    const percentage = (metric.data[i].value / metric.max) * 100;
+                    bar.style.width = '0%';
+                    setTimeout(() => {
+                        bar.style.width = percentage + '%';
+                    }, 50);
+                });
+            }, 100);
+        }
+
+        document.querySelectorAll('.metric-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.metric-button').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                renderChart(button.dataset.metric);
+            });
+        });
+
+        // Initial render
+        renderChart('faithfulness');
+
+        // Reveal on scroll
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
